@@ -20,42 +20,30 @@ from rclpy.node import Node
 from rclpy.time import Time
 from packets_msgs.msg import Packet
 
-from std_msgs.msg import String
+from std_msgs.msg import Header
 
 import os
 
 class MinimalPublisher(Node):
 
-    def __init__(self):
+    def __init__(self, timer_period=0.01):
         super().__init__('talker')
         self.publisher_ = self.create_publisher(Packet, 'packets', 1)
-        timer_period = 1  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer_period = timer_period  # seconds
+        print(f'time period is: "{self.timer_period}"')
+        self.timer = self.create_timer(self.timer_period, self.timer_callback)
         self.i = 0
-
-#     def timer_callback(self):
-#         ROS_DOMAIN_ID = os.environ.get('ROS_DOMAIN_ID')
-#         msg = String()
-# #        msg.data = 'Hello Mike: %d' % self.i
-#         current_time = self.get_clock().now()
-#         print(type(current_time))
-#         # print(type(current_time))
-#         msg.data = f'{current_time.nanoseconds}: TB{ROS_DOMAIN_ID}: {self.i}'
-#         self.publisher_.publish(msg)
-#         self.get_logger().info(' "%s"' % msg.data)
-#         self.i += 1
-
 
     def timer_callback(self):
         ROS_DOMAIN_ID = os.environ.get('ROS_DOMAIN_ID')
         msg = Packet()
-        msg.num = self.i
-        # current_time = self.get_clock().now()
-        # print(type(current_time))
-        # print(type(current_time))
-        # msg.sec = current_time.nanoseconds
+        msg.stamp = self.get_clock().now().to_msg()
+        msg.domain_id = int(ROS_DOMAIN_ID)
+        msg.packet_id = self.i
+        msg.freq = int(1/self.timer_period)
         self.publisher_.publish(msg)
-        self.get_logger().info(' "%s"' % msg.num)
+        self.get_logger().info(' "%s"' % msg.stamp)
+        self.get_logger().info(f'time period is: "{self.timer_period}" and self.i is: "{self.i}"')
         self.i += 1
 
 
@@ -64,14 +52,20 @@ class MinimalPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    talker = MinimalPublisher()
+    for i in [0.0001, 0.001, 0.01, 0.1]:
+        talker = MinimalPublisher(i)
+        for _ in range(50):
+            if not rclpy.ok():
+                break
+            rclpy.spin_once(talker)
+        talker.destroy_node()
 
-    while rclpy.ok() and talker.i < 50000:
-        rclpy.spin_once(talker)
+
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
+   
     talker.destroy_node()
     rclpy.shutdown()
 
