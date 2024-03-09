@@ -19,7 +19,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
 from packets_msgs.msg import Packet
-
+import threading
 from std_msgs.msg import Header
 
 import os
@@ -37,6 +37,7 @@ class MinimalPublisher(Node):
     def timer_callback(self):
         ROS_DOMAIN_ID = os.environ.get('ROS_DOMAIN_ID')
         msg = Packet()
+        # msg.done = False
         msg.stamp = self.get_clock().now().to_msg()
         msg.domain_id = int(ROS_DOMAIN_ID)
         msg.packet_id = self.i
@@ -48,13 +49,12 @@ class MinimalPublisher(Node):
 
 
 
-
 def main(args=None):
     rclpy.init(args=args)
 
     for i in [0.0001, 0.001, 0.01, 0.1]:
         talker = MinimalPublisher(i)
-        for _ in range(50):
+        for _ in range(1000):
             if not rclpy.ok():
                 break
             rclpy.spin_once(talker)
@@ -62,10 +62,26 @@ def main(args=None):
 
 
 
+
+
+# def main(args=None):
+#     rclpy.init(args=args)
+
+#     for i in [0.0001, 0.001, 0.01, 0.1, -1]:
+#         if i != -1:
+#             talker = MinimalPublisher(i)
+#             for _ in range(50):
+#                 if not rclpy.ok():
+#                     break
+#                 rclpy.spin_once(talker)
+#             talker.destroy_node()
+#         else:
+#             talker = MinimalPublisher(i)
+#             rclpy.spin_once(talker)
+#             talker.destroy_node()
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-   
     talker.destroy_node()
     rclpy.shutdown()
 

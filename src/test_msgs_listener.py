@@ -20,6 +20,9 @@ from packets_msgs.msg import Packet
 import matplotlib.pyplot as plt
 from std_msgs.msg import String
 import os
+import signal
+
+latency_lists = {}
 
 
 class MinimalSubscriber(Node):
@@ -32,8 +35,9 @@ class MinimalSubscriber(Node):
             self.listener_callback,
             1)
         self.subscription  # prevent unused variable warning
-        self.latency_lists = {}
+        # self.latency_lists = {}
         self.received_message = False
+
 
     def listener_callback(self, msg):
         current_time = self.get_clock().now().to_msg()
@@ -42,9 +46,13 @@ class MinimalSubscriber(Node):
         time_diff_nsec *= 10**-9
         # self.latencies.append(time_diff_nsec)
         freq = msg.freq
-        if freq not in self.latency_lists:
-            self.latency_lists[freq] = []  # Initialize list if category is encountered for the first time
-        self.latency_lists[freq].append(time_diff_nsec)
+        # if freq not in self.latency_lists:
+        #     self.latency_lists[freq] = []  # Initialize list if category is encountered for the first time
+        # self.latency_lists[freq].append(time_diff_nsec)
+
+        if freq not in latency_lists:
+            latency_lists[freq] = []  # Initialize list if category is encountered for the first time
+        latency_lists[freq].append(time_diff_nsec)
         self.received_message = True
         # print(self.latency_lists)
 
@@ -57,34 +65,28 @@ class MinimalSubscriber(Node):
         #     self.plot_jitter_profile()
                 # self.destroy_node()
                 # rclpy.shutdown()
-        self.plot_jitter_profiles('/home/UNT/md0708/plots')
+        # self.plot_jitter_profiles('/home/UNT/md0708/plots')
+
+    def check_for_timeout(self):
+        if not self.received_message:
+            self.get_logger().info("No messages received. Exiting...")
+            rclpy.shutdown()
 
 
+def plot_jitter_profiles(output_folder, dict_of_lists):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-    def plot_jitter_profiles(self, output_folder):
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-
-        for category, times in self.latency_lists.items():
-            plt.figure()
-            plt.plot(times)
-            plt.xlabel('Index')
-            plt.ylabel('Time (nanoseconds)')
-            plt.title(f'Jitter Profile - Category {category}')
-            plt.savefig(os.path.join(output_folder, f'jitter_profile_category_{category}.png'))
-            plt.close()
+    for category, times in dict_of_lists.items():
+        plt.figure()
+        plt.plot(times)
+        plt.xlabel('Index')
+        plt.ylabel('Time (nanoseconds)')
+        plt.title(f'Jitter Profile - Category {category}')
+        plt.savefig(os.path.join(output_folder, f'jitter_profile_category_{category}.png'))
+        plt.close()
 
 
-    # def wait_for_messages(self, timeout_sec):
-    #     future = self.create_future()
-    #     self.subscription = self.create_subscription(
-    #         String,
-    #         'topic',
-    #         self.listener_callback,
-    #         1)
-    #     rclpy.spin_until_future_complete(self, future, timeout_sec)
-    #     if not self.received_message:
-    #         print("No messages received within the timeout period.")
 
     # def plot_jitter_profile(self):
     #     plt.plot(self.latencies)
@@ -95,17 +97,23 @@ class MinimalSubscriber(Node):
     #     plt.show()
 
 
+def signal_handler(sig, frame):
+    global latency_lists
+    print("Ctrl+C pressed. Exiting...")
+    print("Latency lists:", latency_lists)
+    plot_jitter_profiles('/home/UNT/md0708/plots', dict_of_lists = latency_lists)
+
+    rclpy.shutdown()
+
 def main(args=None):
     rclpy.init(args=args)
-    minimal_subscriber = MinimalSubscriber()
-    # future = minimal_subscriber.wait_for_message(timeout_sec=10.0)  # Wait for a message for up to 10 seconds
-    # print("Shutting down")
+    global latency_lists
 
-    # try:
-    #     minimal_subscriber.wait_for_messages(10.0)  # Wait for 2 seconds for messages
-    # finally:
-    #     minimal_subscriber.destroy_node()
-    #     rclpy.shutdown()
+        # Register the signal handler for Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+    minimal_subscriber = MinimalSubscriber()
+    minimal_subscriber.create_timer(2, minimal_subscriber.check_for_timeout)
+
     rclpy.spin(minimal_subscriber)
     # minimal_subscriber.plot_jitter_profiles('/home/UNT/md0708/plots')
     # Destroy the node explicitly
@@ -117,3 +125,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
+
