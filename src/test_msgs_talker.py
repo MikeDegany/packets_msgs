@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 
+#Maintainer: Mike Degany (mike.degany@gmail.com)
+
 # Copyright 2016 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +54,7 @@ class MinimalPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    for i in [0.0001, 0.001, 0.01, 0.1]:
+    for i in [0.0001, 0.0005, 0.001, 0.005, 0.01]:
         talker = MinimalPublisher(i)
         for _ in range(1000):
             if not rclpy.ok():
@@ -61,27 +63,6 @@ def main(args=None):
         talker.destroy_node()
 
 
-
-
-
-# def main(args=None):
-#     rclpy.init(args=args)
-
-#     for i in [0.0001, 0.001, 0.01, 0.1, -1]:
-#         if i != -1:
-#             talker = MinimalPublisher(i)
-#             for _ in range(50):
-#                 if not rclpy.ok():
-#                     break
-#                 rclpy.spin_once(talker)
-#             talker.destroy_node()
-#         else:
-#             talker = MinimalPublisher(i)
-#             rclpy.spin_once(talker)
-#             talker.destroy_node()
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     talker.destroy_node()
     rclpy.shutdown()
 
