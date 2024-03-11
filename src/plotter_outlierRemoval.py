@@ -168,7 +168,7 @@ def signal_handler(sig, frame):
     global latency_lists
     latency_lists_filtered = filter_outliers(latency_lists, threshold=0.2)
     for category, times in latency_lists_filtered.items():
-        filtered_times = [time for time in times if time <= threshold]
+        filtered_times = [time for time in times if time <= 0.2]
         print(40*'-')
         print(40*'-')
         print(40*'-')
