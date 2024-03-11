@@ -71,7 +71,11 @@ class MinimalSubscriber(Node):
 def plot_jitter_profiles(output_folder, dict_of_lists):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    filtered_latency_lists = {}
     for category, times in dict_of_lists.items():
+        filtered_times = [time for time in times if time <= 0.2]
+        filtered_latency_lists[category] = filtered_times
+    for category, times in filtered_latency_lists.items():
         plt.figure()
         plt.plot(times)
         plt.xlabel('Index')
