@@ -54,7 +54,7 @@ class MinimalPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    for i in [0.0001, 0.0005, 0.001, 0.005, 0.01]:
+    for i in [0.01, 0.005, 0.002, 0.001, 0.0005, 0.00025, 0.000166, 0.000125, 0.0001]:
         talker = MinimalPublisher(i)
         for _ in range(1000):
             if not rclpy.ok():
