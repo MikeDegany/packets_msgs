@@ -41,6 +41,7 @@ class MinimalPublisher(Node):
         msg = Packet()
         # msg.done = False
         msg.stamp = self.get_clock().now().to_msg()
+        # msg.rec_stamp = Time()
         msg.domain_id = int(ROS_DOMAIN_ID)
         msg.packet_id = self.i
         msg.freq = int(1/self.timer_period)

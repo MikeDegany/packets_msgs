@@ -26,9 +26,8 @@ import signal
 # import numpy as np
 import seaborn as sns
 
-#Store 
-latency_lists = {}
-packets_ts = []
+#Store messages in a list to be used for calculating latency later
+packets = []
 #Create a Node class (listener) that will subscribe to the packets topic and store the latency of each message
 class MinimalSubscriber(Node):
 
@@ -38,34 +37,38 @@ class MinimalSubscriber(Node):
             Packet, # Message type
             'packets',  # Topic name
             self.listener_callback, # Callback function
-            1)  
+            1)
         self.subscription  # prevent unused variable warning
         self.received_message = False
 
 
     def listener_callback(self, msg):
-        current_time = self.get_clock().now().to_msg()
-        time_diff_sec = current_time.sec - msg.stamp.sec
-        time_diff_nsec = current_time.nanosec - msg.stamp.nanosec
-        time_diff_nsec *= 10**-9
-        freq = msg.freq
-
-        if freq not in latency_lists:
-            print(20*'-')
-            print(f"Messages are being sent with new Frequency: {freq}")
-            print(20*'-')
-            latency_lists[freq] = []  # Initialize list if category is encountered for the first time
-        latency_lists[freq].append(time_diff_nsec)
+        msg.rec_stamp = self.get_clock().now().to_msg()
+        packets.append(msg)
         self.received_message = True
-
-        self.get_logger().info(f'Message #{msg.packet_id} from {msg.domain_id} with frequency {msg.freq} Hz')
-        # self.get_logger().info(f'Time difference is: "{time_diff_sec}.{time_diff_nsec}"')
 
     def check_for_timeout(self):
         if not self.received_message:
             self.get_logger().info("No messages received. Exiting...")
             rclpy.shutdown()
 
+
+
+def calculate_timediffs(packets):
+    latency_lists = {}
+    for msg in packets:
+        if msg.freq not in latency_lists:
+            latency_lists[msg.freq] = []  # Initialize list if category is encountered for the first time
+        time_diff_sec = msg.rec_stamp.sec - msg.stamp.sec
+        time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
+        time_diff_nsec *= 10**-9
+        time_diff = time_diff_sec + time_diff_nsec
+        # latency_lists[msg.freq].append(time_diff)
+        if time_diff > 0 and time_diff < 0.01:
+            latency_lists[msg.freq].append(time_diff)
+        else:
+            print(f"oulier detected: {msg.freq}  {time_diff}")
+    return latency_lists
 
 def plot_jitter_profiles(output_folder, dict_of_lists):
     if not os.path.exists(output_folder):
@@ -81,12 +84,12 @@ def plot_jitter_profiles(output_folder, dict_of_lists):
 
 def calculate_statistics(latency_lists):
     statistics = {}
-    for category, intervals in latency_lists.items():
-        mean = sum(intervals) / len(intervals)
-        variance = sum((x - mean) ** 2 for x in intervals) / len(intervals)
-        statistics[category] = {'mean': mean, 'variance': variance}
-    for category, stats in statistics.items():
-        print(f"Category: {category}")
+    for frequency, delays in latency_lists.items():
+        mean = sum(delays) / len(delays)
+        variance = sum((x - mean) ** 2 for x in delays) / len(delays)
+        statistics[frequency] = {'mean': mean, 'variance': variance}
+    for frequency, stats in statistics.items():
+        print(f"frequency: {frequency}")
         print(f"Mean: {stats['mean']}")
         print(f"Variance: {stats['variance']}")
         print("-------------------------------")
@@ -97,7 +100,7 @@ def generate_histogram(output_folder, latency_lists):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     for Frequency, stats in latency_lists.items():
-        ax = sns.histplot(latency_lists[Frequency], bins=20, alpha=0.5, label=Frequency)
+        ax = sns.histplot(latency_lists[Frequency], bins=50, alpha=0.5, label=Frequency)
         mids = [rect.get_x() + rect.get_width() / 2 for rect in ax.patches]
         plt.xlabel('Latency (sec)')
         plt.ylabel('occurance')
@@ -149,11 +152,11 @@ def plot_packet_loss(output_folder, packet_loss_rates):
 
 
 def signal_handler(sig, frame):
-    global latency_lists
+    global packets
+    latency_lists = calculate_timediffs(packets)
     print("Ctrl+C pressed. Exiting...")
-    print("Latency lists:", latency_lists)
+    # print("Latency lists:", latency_lists)
     statistics = calculate_statistics(latency_lists)
-    print("Statistics of latency lists:", statistics)
     generate_histogram('/home/UNT/md0708/plots/hists', latency_lists)
     plot_boxplot('/home/UNT/md0708/plots/boxplot', latency_lists)  # Call plot_boxplot function here
     plot_jitter_profiles('/home/UNT/md0708/plots/plots', latency_lists)
