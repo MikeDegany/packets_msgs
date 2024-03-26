@@ -27,8 +27,6 @@ import signal
 import seaborn as sns
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
-
-
 #Store messages in a list to be used for calculating latency later
 packets = []
 #Create a Node class (listener) that will subscribe to the packets topic and store the latency of each message
@@ -41,6 +39,7 @@ class MinimalSubscriber(Node):
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE
         )
+
         self.subscription = self.create_subscription(
             Packet, # Message type
             'packets',  # Topic name
@@ -66,31 +65,86 @@ class MinimalSubscriber(Node):
 
 def calculate_timediffs(packets):
     latency_lists = {}
+    print(50*'()')
+    print(f"packets: {packets}")
+    print(50*'()')
     for msg in packets:
         if msg.freq not in latency_lists:
-            latency_lists[msg.freq] = []  # Initialize list if category is encountered for the first time
-        time_diff_sec = msg.rec_stamp.sec - msg.stamp.sec
-        time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
-        time_diff_nsec *= 10**-9
-        time_diff = time_diff_sec + time_diff_nsec
-        # latency_lists[msg.freq].append(time_diff)
-        if time_diff > 0 and time_diff < 0.01:
-            latency_lists[msg.freq].append(time_diff)
-        else:
-            print(f"oulier detected: {msg.freq}  {time_diff}")
+            print(50*'[]')
+            print(f"TOC Msg: freq:{msg.freq} id:{msg.packet_id}")
+            print(50*'[]')
+            latency_lists[msg.freq] = [[], []]  # Initialize list if category is encountered for the first time
+            TOC = msg.stamp.sec + (msg.stamp.nanosec * 10**-9)
+            i_TOC = msg.packet_id
+
+        time_diff = (msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)) - ( TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        print(50*'()')
+        print(f"freq: {msg.freq}")
+        print(f"packet_id: {msg.packet_id}")
+        print(f"rec time: {(msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9))}")
+        print(f"Expected time: {TOC + (msg.packet_id - i_TOC) * 1/msg.freq}")
+        print(f"Time diff: {time_diff}")
+        print(50*'()')
+        # time_diff_sec = msg.rec_stamp.sec - msg.stamp.sec
+        # time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
+        # time_diff_nsec *= 10**-9
+        # time_diff = time_diff_sec + time_diff_nsec
+        # latency_lists[msg.freq].append(TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        latency_lists[msg.freq][0].append((msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)))
+        latency_lists[msg.freq][1].append(TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        # if time_diff > -0.02 and time_diff < 0.02:
+        #     latency_lists[msg.freq].append(time_diff)
+        # else:
+        #     print(f"oulier detected: {msg.freq}  {time_diff}")
     return latency_lists
+
+# def plot_jitter_profiles(output_folder, dict_of_lists):
+#     if not os.path.exists(output_folder):
+#         os.makedirs(output_folder)
+#     for category, times in dict_of_lists.items():
+#         plt.figure()
+#         plt.plot(times)
+#         plt.xlabel('Index')
+#         plt.ylabel('Time (sec)')
+#         plt.title(f'Jitter plot - Category {category}')
+#         plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.png'))
+#         plt.close()
 
 def plot_jitter_profiles(output_folder, dict_of_lists):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    for category, times in dict_of_lists.items():
+    for category, data_lists in dict_of_lists.items():
+        rec_times = data_lists[0]
+        expected_times = data_lists[1]
+
         plt.figure()
-        plt.plot(times)
+        plt.plot(rec_times, label='Received Times (sec)')
+        plt.plot(expected_times, label='Expected Times (sec)')
         plt.xlabel('Index')
         plt.ylabel('Time (sec)')
         plt.title(f'Jitter plot - Category {category}')
+        plt.legend()
         plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.png'))
         plt.close()
+
+def plot_jitter_profiles(output_folder, dict_of_lists):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    for category, data_lists in dict_of_lists.items():
+        rec_times = data_lists[0]
+        expected_times = data_lists[1]
+
+        plt.figure()
+        plt.plot(rec_times, label='Received Times (sec)')
+        plt.plot(expected_times, label='Expected Times (sec)')
+        plt.xlabel('Index')
+        plt.ylabel('Time (sec)')
+        plt.title(f'Jitter plot - Category {category}')
+        plt.legend()
+        plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.png'))
+        plt.close()
+
+
 
 def calculate_statistics(latency_lists):
     statistics = {}
@@ -165,11 +219,13 @@ def signal_handler(sig, frame):
     global packets
     latency_lists = calculate_timediffs(packets)
     print("Ctrl+C pressed. Exiting...")
-    # print("Latency lists:", latency_lists)
+    print("Latency lists:", latency_lists)
+
+    plot_jitter_profiles('/home/UNT/md0708/plots/plots', latency_lists)
+    latency_lists = {key: data_lists[0] for key, data_lists in latency_lists.items()}
     statistics = calculate_statistics(latency_lists)
     generate_histogram('/home/UNT/md0708/plots/hists', latency_lists)
     plot_boxplot('/home/UNT/md0708/plots/boxplot', latency_lists)  # Call plot_boxplot function here
-    plot_jitter_profiles('/home/UNT/md0708/plots/plots', latency_lists)
     packet_loss_rates = calculate_packet_loss(latency_lists)
     print("Packet Loss Rates:", packet_loss_rates)
     plot_packet_loss('/home/UNT/md0708/plots/PLR',packet_loss_rates)
