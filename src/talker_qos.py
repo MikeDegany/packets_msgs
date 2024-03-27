@@ -19,17 +19,18 @@ class MinimalPublisher(Node):
         print(f'time period is: "{self.timer_period}"')
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
         self.i = 0
+        self.msg = Packet()
+        self.ROS_DOMAIN_ID = int(os.environ.get('ROS_DOMAIN_ID', 0))
+
 
     def timer_callback(self):
-        ROS_DOMAIN_ID = os.environ.get('ROS_DOMAIN_ID')
-        msg = Packet()
-        msg.stamp = self.get_clock().now().to_msg()
-        msg.domain_id = int(ROS_DOMAIN_ID)
-        msg.packet_id = self.i
-        msg.freq = int(1 / self.timer_period)
-        self.publisher_.publish(msg)
-        self.get_logger().info(' "%s"' % msg.stamp)
-        self.get_logger().info(f'time period is: "{self.timer_period}" and self.i is: "{self.i}"')
+        self.msg.stamp = self.get_clock().now().to_msg()
+        self.msg.domain_id = self.ROS_DOMAIN_ID
+        self.msg.packet_id = self.i
+        self.msg.freq = int(1 / self.timer_period)
+        self.publisher_.publish(self.msg)
+        # self.get_logger().info(' "%s"' % msg.stamp)
+        # self.get_logger().info(f'time period is: "{self.timer_period}" and self.i is: "{self.i}"')
         self.i += 1
 
 def main(args=None):
