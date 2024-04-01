@@ -4,4 +4,3 @@ int32 domain_id
 int64 freq
 builtin_interfaces/Time stamp
 builtin_interfaces/Time rec_stamp
-# rclpy.time.Time stamp

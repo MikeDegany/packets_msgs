@@ -37,7 +37,7 @@ class MinimalSubscriber(Node):
     def __init__(self):
         super().__init__('listener')
         qos_profile = QoSProfile(
-            depth=10,
+            depth=1,
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE
         )
@@ -99,7 +99,7 @@ def calculate_statistics(latency_lists):
         variance = sum((x - mean) ** 2 for x in delays) / len(delays)
         statistics[frequency] = {'mean': mean, 'variance': variance}
     for frequency, stats in statistics.items():
-        print(f"frequency: {frequency}")
+        print(f"frequency: {frequency}")PLR
         print(f"Mean: {stats['mean']}")
         print(f"Variance: {stats['variance']}")
         print("-------------------------------")
@@ -112,7 +112,7 @@ def generate_histogram(output_folder, latency_lists):
     for Frequency, stats in latency_lists.items():
         ax = sns.histplot(latency_lists[Frequency], bins=50, alpha=0.5, label=Frequency)
         mids = [rect.get_x() + rect.get_width() / 2 for rect in ax.patches]
-        plt.xlabel('Latency (sec)')
+        plt.xlabel('Latency (sec)')PLR
         plt.ylabel('occurance')
         plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz')
         plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.png'))

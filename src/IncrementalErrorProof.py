@@ -35,7 +35,7 @@ class MinimalSubscriber(Node):
     def __init__(self):
         super().__init__('listener')
         qos_profile = QoSProfile(
-            depth=10,
+            depth=1,
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE
         )
