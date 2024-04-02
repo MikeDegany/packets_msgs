@@ -2,19 +2,17 @@
 
 #Maintainer: Mike Degany (mike.degany@gmail.com)
 
-# Copyright 2016 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Copyright 2024 Mike Degany.
+# Licensed under the Attribution-Only License, Version 1.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
+# https://example.com/license/attribution-only-v1.0
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 
 import rclpy
 from rclpy.node import Node
@@ -23,9 +21,10 @@ import matplotlib.pyplot as plt
 from std_msgs.msg import String
 import os
 import signal
-# import numpy as np
 import seaborn as sns
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from datetime import datetime
+
 
 
 
@@ -53,7 +52,7 @@ class MinimalSubscriber(Node):
 
 
     def listener_callback(self, msg):
-        msg.rec_stamp = self.get_clock().now().to_msg()
+        msg.rec_stamp = self.get_clock().now().to_msg() # Record the time the message was received
         packets.append(msg)
         self.received_message = True
 
@@ -73,11 +72,11 @@ def calculate_timediffs(packets):
         time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
         time_diff_nsec *= 10**-9
         time_diff = time_diff_sec + time_diff_nsec
-        # latency_lists[msg.freq].append(time_diff)
-        if time_diff > 0 and time_diff < 0.01:
-            latency_lists[msg.freq].append(time_diff)
-        else:
-            print(f"oulier detected: {msg.freq}  {time_diff}")
+        latency_lists[msg.freq].append(time_diff)
+        # if time_diff > 0 and time_diff < 0.01:
+        #     latency_lists[msg.freq].append(time_diff)
+        # else:
+        #     print(f"oulier detected: {msg.freq}  {time_diff}")
     return latency_lists
 
 def plot_jitter_profiles(output_folder, dict_of_lists):
@@ -99,7 +98,7 @@ def calculate_statistics(latency_lists):
         variance = sum((x - mean) ** 2 for x in delays) / len(delays)
         statistics[frequency] = {'mean': mean, 'variance': variance}
     for frequency, stats in statistics.items():
-        print(f"frequency: {frequency}")PLR
+        print(f"frequency: {frequency}")
         print(f"Mean: {stats['mean']}")
         print(f"Variance: {stats['variance']}")
         print("-------------------------------")
@@ -112,7 +111,7 @@ def generate_histogram(output_folder, latency_lists):
     for Frequency, stats in latency_lists.items():
         ax = sns.histplot(latency_lists[Frequency], bins=50, alpha=0.5, label=Frequency)
         mids = [rect.get_x() + rect.get_width() / 2 for rect in ax.patches]
-        plt.xlabel('Latency (sec)')PLR
+        plt.xlabel('Latency (sec)')
         plt.ylabel('occurance')
         plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz')
         plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.png'))
@@ -137,11 +136,13 @@ def plot_boxplot(output_folder, latency_lists):
 
 def calculate_packet_loss(latency_lists):
     packet_loss_rates = {}
+    print("Packet Loss Rates:")
     for category, times in latency_lists.items():
         num_packets_received = len(times)
         packet_loss = 1000 - num_packets_received
         packet_loss_rate = packet_loss / 1000
-        packet_loss_rates[category] = packet_loss_rate
+        packet_loss_rates[category] = packet_loss_rate * 100
+        print(f'Frequency:{category} | {packet_loss}')
     return packet_loss_rates
 
 def plot_packet_loss(output_folder, packet_loss_rates):
@@ -153,7 +154,7 @@ def plot_packet_loss(output_folder, packet_loss_rates):
     plt.figure()
     plt.plot(categories, loss_rates, marker='o')
     plt.xlabel('Frequency')
-    plt.ylabel('Packet Loss Rate')
+    plt.ylabel('Packet Loss Rate (Percentage)')
     plt.title('Packet Loss Rate vs Frequency')
     plt.grid(True)
     plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{categories}.png'))
@@ -166,13 +167,26 @@ def signal_handler(sig, frame):
     latency_lists = calculate_timediffs(packets)
     print("Ctrl+C pressed. Exiting...")
     # print("Latency lists:", latency_lists)
+
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # begining timestamp
+    run_path = os.path.join("/home/UNT/md0708/Experiments/", ts + "_CollectThenCompute")
+
+    boxplot_path = os.path.join(run_path, "boxplot")
+    hists_path = os.path.join(run_path, "hists")
+    plots_path = os.path.join(run_path, "plots")
+    PLR_path = os.path.join(run_path, "PLR")
+    os.makedirs(boxplot_path)
+    os.makedirs(hists_path)
+    os.makedirs(plots_path)
+    os.makedirs(PLR_path)
+
     statistics = calculate_statistics(latency_lists)
-    generate_histogram('/home/UNT/md0708/plots/hists', latency_lists)
-    plot_boxplot('/home/UNT/md0708/plots/boxplot', latency_lists)  # Call plot_boxplot function here
-    plot_jitter_profiles('/home/UNT/md0708/plots/plots', latency_lists)
+    generate_histogram(hists_path, latency_lists)
+    plot_boxplot(boxplot_path, latency_lists)  # Call plot_boxplot function here
+    plot_jitter_profiles(plots_path, latency_lists)
     packet_loss_rates = calculate_packet_loss(latency_lists)
     print("Packet Loss Rates:", packet_loss_rates)
-    plot_packet_loss('/home/UNT/md0708/plots/PLR',packet_loss_rates)
+    plot_packet_loss(PLR_path,packet_loss_rates)
 
     rclpy.shutdown()
 
@@ -183,7 +197,7 @@ def main(args=None):
     # Register the signal handler for Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
     minimal_subscriber = MinimalSubscriber()
-    minimal_subscriber.create_timer(2, minimal_subscriber.check_for_timeout)
+    minimal_subscriber.create_timer(5, minimal_subscriber.check_for_timeout)
 
     rclpy.spin(minimal_subscriber)
 
@@ -193,3 +207,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+

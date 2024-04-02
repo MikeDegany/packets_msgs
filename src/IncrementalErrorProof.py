@@ -2,14 +2,11 @@
 
 #Maintainer: Mike Degany (mike.degany@gmail.com)
 
-# Copyright 2016 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Copyright 2024 Mike Degany.
+# Licensed under the Attribution-Only License, Version 1.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
+# https://example.com/license/attribution-only-v1.0
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +20,10 @@ import matplotlib.pyplot as plt
 from std_msgs.msg import String
 import os
 import signal
-# import numpy as np
 import seaborn as sns
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from datetime import datetime
+
 
 #Store messages in a list to be used for calculating latency later
 packets = []
@@ -52,7 +50,7 @@ class MinimalSubscriber(Node):
 
 
     def listener_callback(self, msg):
-        msg.rec_stamp = self.get_clock().now().to_msg()
+        msg.rec_stamp = self.get_clock().now().to_msg() # Record the time the message was received
         packets.append(msg)
         self.received_message = True
 
@@ -65,33 +63,27 @@ class MinimalSubscriber(Node):
 
 def calculate_timediffs(packets):
     latency_lists = {}
-    print(50*'()')
-    print(f"packets: {packets}")
-    print(50*'()')
     for msg in packets:
         if msg.freq not in latency_lists:
-            print(50*'[]')
-            print(f"TOC Msg: freq:{msg.freq} id:{msg.packet_id}")
-            print(50*'[]')
             latency_lists[msg.freq] = [[], []]  # Initialize list if category is encountered for the first time
             TOC = msg.stamp.sec + (msg.stamp.nanosec * 10**-9)
             i_TOC = msg.packet_id
 
         time_diff = (msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)) - ( TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
-        print(50*'()')
-        print(f"freq: {msg.freq}")
-        print(f"packet_id: {msg.packet_id}")
-        print(f"rec time: {(msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9))}")
-        print(f"Expected time: {TOC + (msg.packet_id - i_TOC) * 1/msg.freq}")
-        print(f"Time diff: {time_diff}")
-        print(50*'()')
+        # print(50*'()')
+        # print(f"freq: {msg.freq}")
+        # print(f"packet_id: {msg.packet_id}")
+        # print(f"rec time: {(msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9))}")
+        # print(f"Expected time: {TOC + (msg.packet_id - i_TOC) * 1/msg.freq}")
+        # print(f"Time diff: {time_diff}")
+        # print(50*'()')
         # time_diff_sec = msg.rec_stamp.sec - msg.stamp.sec
         # time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
         # time_diff_nsec *= 10**-9
         # time_diff = time_diff_sec + time_diff_nsec
         # latency_lists[msg.freq].append(TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
-        latency_lists[msg.freq][0].append((msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)))
-        latency_lists[msg.freq][1].append(TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        latency_lists[msg.freq][0].append((msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9))) # Record the time the message was received
+        latency_lists[msg.freq][1].append(TOC + (msg.packet_id - i_TOC) * 1/msg.freq)             # Record the time the message was expected to be received
         # if time_diff > -0.02 and time_diff < 0.02:
         #     latency_lists[msg.freq].append(time_diff)
         # else:
@@ -195,7 +187,8 @@ def calculate_packet_loss(latency_lists):
         num_packets_received = len(times)
         packet_loss = 1000 - num_packets_received
         packet_loss_rate = packet_loss / 1000
-        packet_loss_rates[category] = packet_loss_rate
+        packet_loss_rates[category] = packet_loss_rate * 100
+        print(f'Frequency:{category} | {packet_loss}')
     return packet_loss_rates
 
 def plot_packet_loss(output_folder, packet_loss_rates):
@@ -207,7 +200,7 @@ def plot_packet_loss(output_folder, packet_loss_rates):
     plt.figure()
     plt.plot(categories, loss_rates, marker='o')
     plt.xlabel('Frequency')
-    plt.ylabel('Packet Loss Rate')
+    plt.ylabel('Packet Loss Rate (Percentage)')
     plt.title('Packet Loss Rate vs Frequency')
     plt.grid(True)
     plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{categories}.png'))
@@ -219,16 +212,28 @@ def signal_handler(sig, frame):
     global packets
     latency_lists = calculate_timediffs(packets)
     print("Ctrl+C pressed. Exiting...")
-    print("Latency lists:", latency_lists)
+    # print("Latency lists:", latency_lists)
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # begining timestamp
+    run_path = os.path.join("/home/UNT/md0708/Experiments/", ts + "_IncrementalErrorProof")
 
-    plot_jitter_profiles('/home/UNT/md0708/plots/plots', latency_lists)
+    boxplot_path = os.path.join(run_path, "boxplot")
+    hists_path = os.path.join(run_path, "hists")
+    plots_path = os.path.join(run_path, "plots")
+    PLR_path = os.path.join(run_path, "PLR")
+    os.makedirs(boxplot_path)
+    os.makedirs(hists_path)
+    os.makedirs(plots_path)
+    os.makedirs(PLR_path)
+
+
+    plot_jitter_profiles(plots_path, latency_lists)
     latency_lists = {key: data_lists[0] for key, data_lists in latency_lists.items()}
     statistics = calculate_statistics(latency_lists)
-    generate_histogram('/home/UNT/md0708/plots/hists', latency_lists)
-    plot_boxplot('/home/UNT/md0708/plots/boxplot', latency_lists)  # Call plot_boxplot function here
+    generate_histogram(hists_path, latency_lists)
+    plot_boxplot(boxplot_path, latency_lists)  # Call plot_boxplot function here
     packet_loss_rates = calculate_packet_loss(latency_lists)
     print("Packet Loss Rates:", packet_loss_rates)
-    plot_packet_loss('/home/UNT/md0708/plots/PLR',packet_loss_rates)
+    plot_packet_loss(PLR_path,packet_loss_rates)
 
     rclpy.shutdown()
 
@@ -239,7 +244,9 @@ def main(args=None):
     # Register the signal handler for Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
     minimal_subscriber = MinimalSubscriber()
-    minimal_subscriber.create_timer(2, minimal_subscriber.check_for_timeout)
+    minimal_subscriber.create_timer(5, minimal_subscriber.check_for_timeout)
+
+
 
     rclpy.spin(minimal_subscriber)
 
