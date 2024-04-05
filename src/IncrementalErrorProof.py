@@ -229,8 +229,8 @@ def signal_handler(sig, frame):
     plot_jitter_profiles(plots_path, latency_lists)
     latency_lists = {key: data_lists[0] for key, data_lists in latency_lists.items()}
     statistics = calculate_statistics(latency_lists)
-    generate_histogram(hists_path, latency_lists)
-    plot_boxplot(boxplot_path, latency_lists)  # Call plot_boxplot function here
+    # generate_histogram(hists_path, latency_lists)
+    # plot_boxplot(boxplot_path, latency_lists)  # Call plot_boxplot function here
     packet_loss_rates = calculate_packet_loss(latency_lists)
     print("Packet Loss Rates:", packet_loss_rates)
     plot_packet_loss(PLR_path,packet_loss_rates)
