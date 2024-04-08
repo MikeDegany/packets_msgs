@@ -220,8 +220,8 @@ def signal_handler(sig, frame):
     hists_path = os.path.join(run_path, "hists")
     plots_path = os.path.join(run_path, "plots")
     PLR_path = os.path.join(run_path, "PLR")
-    os.makedirs(boxplot_path)
-    os.makedirs(hists_path)
+    # os.makedirs(boxplot_path)
+    # os.makedirs(hists_path)
     os.makedirs(plots_path)
     os.makedirs(PLR_path)
 
