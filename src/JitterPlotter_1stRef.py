@@ -73,7 +73,12 @@ def calculate_timediffs(packets):
         # time_diff_nsec = msg.rec_stamp.nanosec - msg.stamp.nanosec
         # time_diff_nsec *= 10**-9
         # time_diff = time_diff_sec + time_diff_nsec
-        time_diff = (msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)) - ( TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        try:
+            time_diff = (msg.rec_stamp.sec + (msg.rec_stamp.nanosec * 10**-9)) - ( TOC + (msg.packet_id - i_TOC) * 1/msg.freq)
+        except ZeroDivisionError:
+            # Handle division by zero error here
+            print("Error: Division by zero!")
+            print(f"msg.freq: {msg.freq}")
         latency_lists[msg.freq].append(time_diff)
         # if time_diff > 0 and time_diff < 0.01:
         #     latency_lists[msg.freq].append(time_diff)
