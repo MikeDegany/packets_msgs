@@ -219,7 +219,7 @@ def main(args=None):
     # Register the signal handler for Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
     minimal_subscriber = MinimalSubscriber()
-    minimal_subscriber.create_timer(5, minimal_subscriber.check_for_timeout)
+    minimal_subscriber.create_timer(11, minimal_subscriber.check_for_timeout)
 
     rclpy.spin(minimal_subscriber)
 
