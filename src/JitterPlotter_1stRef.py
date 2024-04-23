@@ -22,6 +22,7 @@ from std_msgs.msg import String
 import os
 import signal
 import seaborn as sns
+import numpy as np
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from datetime import datetime
 import json
@@ -95,7 +96,7 @@ def plot_jitter_profiles(output_folder, dict_of_lists):
         plt.xlabel('Index')
         plt.ylabel('Time (sec)')
         plt.title(f'Jitter plot - Category {category}')
-        plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.png'))
+        plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.pdf'), format='pdf')
         plt.close()
 
 def calculate_statistics(latency_lists):
@@ -122,7 +123,7 @@ def generate_histogram(output_folder, latency_lists):
         plt.xlabel('Latency (sec)')
         plt.ylabel('occurance')
         plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz')
-        plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.png'))
+        plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.pdf'), format='pdf')
         plt.close()
 
 
@@ -139,7 +140,7 @@ def plot_boxplot(output_folder, latency_lists):
     plt.xlabel('Category')
     plt.ylabel('Time (sec)')
     plt.title('Boxplot of Latency Categories')
-    plt.savefig(os.path.join(output_folder, f'Jitter_Boxplot.png'))
+    plt.savefig(os.path.join(output_folder, f'Jitter_Boxplot.pdf'), format='pdf')
     plt.close()
 
 def calculate_packet_loss(latency_lists):
@@ -156,18 +157,26 @@ def calculate_packet_loss(latency_lists):
 def plot_packet_loss(output_folder, packet_loss_rates):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    categories = list(packet_loss_rates.keys())
-    loss_rates = list(packet_loss_rates.values())
 
-    plt.figure()
-    plt.semilogx(categories, loss_rates, marker='o')  # Set x-axis to logarithmic scale
-    # plt.plot(categories, loss_rates, marker='o')
-    plt.xlabel('Frequency')
-    plt.ylabel('Packet Loss Rate (Percentage)')
-    plt.title('Packet Loss Rate vs Frequency')
-    plt.grid(True)
-    plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{categories}.png'))
+    categories = packet_loss_rates.keys()
+    loss_rates = packet_loss_rates.values()
+
+    # Plotting the data
+    plt.figure(figsize=(10, 6))
+    plt.plot(categories, loss_rates, marker='o', linestyle='-')
+    plt.title('Packet Loss Rates')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Loss Rate (%)')
+    plt.xscale('log')  # Logarithmic scale for x-axis
+    plt.grid(True, which="both", ls="--", alpha=0.5)
+    # Annotate each point with its percentage value
+    for category, loss_rate in zip(categories, loss_rates):
+        plt.text(category, loss_rate, f'{loss_rate:.2f}%', ha='right', va='bottom')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'packet_loss_vs_frequency.pdf'), format='pdf')  # Save figure
     plt.close()
+
 
 def save_data(output_folder, filename, latency_lists):
     if not os.path.exists(output_folder):
