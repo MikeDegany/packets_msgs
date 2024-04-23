@@ -24,7 +24,7 @@ import signal
 import seaborn as sns
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from datetime import datetime
-
+import json
 
 
 
@@ -60,7 +60,6 @@ class MinimalSubscriber(Node):
         if not self.received_message:
             self.get_logger().info("No messages received. Exiting...")
             rclpy.shutdown()
-
 
 
 def calculate_timediffs(packets):
@@ -100,6 +99,7 @@ def calculate_statistics(latency_lists):
         mean = sum(delays) / len(delays)
         variance = sum((x - mean) ** 2 for x in delays) / len(delays)
         statistics[frequency] = {'mean': mean, 'variance': variance}
+
     for frequency, stats in statistics.items():
         print(f"frequency: {frequency}")
         print(f"Mean: {stats['mean']}")
@@ -163,7 +163,19 @@ def plot_packet_loss(output_folder, packet_loss_rates):
     plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{categories}.png'))
     plt.close()
 
+def save_data(output_folder, filename, latency_lists):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    try:
+        with open(os.path.join(output_folder, f'{filename}.json'), 'w') as f:
+            json.dump(latency_lists, f)
+    except Exception as e:
+        print(f"Error saving data: {e}")
 
+def load_data(output_folder):
+    with open(os.path.join(output_folder, 'latency_lists.json'), 'r') as f:
+        latency_lists = json.load(f)
+    return latency_lists
 
 def signal_handler(sig, frame):
     global packets
@@ -178,11 +190,13 @@ def signal_handler(sig, frame):
     hists_path = os.path.join(run_path, "hists")
     plots_path = os.path.join(run_path, "plots")
     PLR_path = os.path.join(run_path, "PLR")
+    packets_path = os.path.join(run_path, "packets")
+    Data_path = os.path.join(run_path, "Data")
     os.makedirs(boxplot_path)
     os.makedirs(hists_path)
     os.makedirs(plots_path)
     os.makedirs(PLR_path)
-
+    os.makedirs(Data_path)
     statistics = calculate_statistics(latency_lists)
     generate_histogram(hists_path, latency_lists)
     plot_boxplot(boxplot_path, latency_lists)  # Call plot_boxplot function here
@@ -191,6 +205,10 @@ def signal_handler(sig, frame):
     print("Packet Loss Rates:", packet_loss_rates)
     plot_packet_loss(PLR_path,packet_loss_rates)
 
+    save_data(Data_path, 'latency_lists', latency_lists)
+    save_data(Data_path, 'packets', str(packets))
+    save_data(Data_path, 'statistics', statistics)
+    save_data(Data_path, 'packet_loss_rates', packet_loss_rates)
     rclpy.shutdown()
 
 def main(args=None):
