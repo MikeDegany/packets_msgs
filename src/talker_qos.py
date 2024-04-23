@@ -54,12 +54,13 @@ def main(args=None):
     # while not talker.publisher_.get_subscription_count():
     #     rclpy.spin_once(talker, timeout_sec=0.1)
 
-
     timer_periods = [0.1, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.00025, 0.000166, 0.000125, 0.0001]
+
+    # timer_periods = [0.002, 0.001, 0.0005, 0.00025, 0.000166, 0.000125, 0.0001]
     for period in timer_periods:
         # Update the timer period dynamically
         talker.update_timer_period(period)
-        for _ in range(1000):
+        for _ in range(int(0.9*(1/period) + 9)):
             if not rclpy.ok():
                 break
             rclpy.spin_once(talker)
