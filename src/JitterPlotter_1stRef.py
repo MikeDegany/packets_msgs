@@ -142,8 +142,8 @@ def calculate_packet_loss(latency_lists):
     print("Packet Loss Rates:")
     for category, times in latency_lists.items():
         num_packets_received = len(times)
-        packet_loss = 1000 - num_packets_received
-        packet_loss_rate = packet_loss / 1000
+        packet_loss = int(0.9*category + 9) - num_packets_received
+        packet_loss_rate = packet_loss / int(0.9*category + 9)
         packet_loss_rates[category] = packet_loss_rate * 100
         print(f'Frequency:{category} | {packet_loss}')
     return packet_loss_rates
@@ -155,7 +155,8 @@ def plot_packet_loss(output_folder, packet_loss_rates):
     loss_rates = list(packet_loss_rates.values())
 
     plt.figure()
-    plt.plot(categories, loss_rates, marker='o')
+    plt.semilogx(categories, loss_rates, marker='o')  # Set x-axis to logarithmic scale
+    # plt.plot(categories, loss_rates, marker='o')
     plt.xlabel('Frequency')
     plt.ylabel('Packet Loss Rate (Percentage)')
     plt.title('Packet Loss Rate vs Frequency')
