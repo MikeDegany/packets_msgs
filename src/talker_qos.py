@@ -60,7 +60,12 @@ def main(args=None):
     for period in timer_periods:
         # Update the timer period dynamically
         talker.update_timer_period(period)
-        for _ in range(int(0.9*(1/period) + 9)):
+        if period > 0.01:
+            repetitions = int(10/period)
+        else:
+            repetitions = 1000
+
+        for _ in range(repetitions):
             if not rclpy.ok():
                 break
             rclpy.spin_once(talker)
