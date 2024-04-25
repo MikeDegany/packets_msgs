@@ -92,10 +92,18 @@ def plot_jitter_profiles(output_folder, dict_of_lists):
         os.makedirs(output_folder)
     for category, times in dict_of_lists.items():
         plt.figure()
-        plt.plot(times)
-        plt.xlabel('Index')
-        plt.ylabel('Time (sec)')
+        plt.scatter(range(len(times)), times, marker='o', color='b', alpha=0.5)
+        plt.xlabel('Packet Index')
+        plt.ylabel('Time Delay (sec)')
         plt.title(f'Jitter plot - Category {category}')
+
+        # Calculate average time delay
+        avg_delay = np.mean(times)
+
+        # Plot average line
+        plt.axhline(y=avg_delay, color='r', linestyle='--', label=f'Average: {avg_delay:.6f} sec')
+        plt.legend()
+
         plt.savefig(os.path.join(output_folder, f'jitter_plot_category_{category}.pdf'), format='pdf')
         plt.close()
 
@@ -114,18 +122,35 @@ def calculate_statistics(latency_lists):
     return statistics
 
 
+
 def generate_histogram(output_folder, latency_lists):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    for Frequency, stats in latency_lists.items():
-        ax = sns.histplot(latency_lists[Frequency], bins=50, alpha=0.5, label=Frequency)
-        mids = [rect.get_x() + rect.get_width() / 2 for rect in ax.patches]
-        plt.xlabel('Latency (sec)')
-        plt.ylabel('occurance')
-        plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz')
+    for Frequency, data in latency_lists.items():
+        plt.figure(figsize=(10, 6))  # Adjust the figure size
+        sns.set_theme(style="whitegrid")   # Set seaborn style
+        
+        # Plot histogram
+        sns.histplot(data, bins=50, alpha=0.5, color='skyblue')
+        
+        # Add mean and standard deviation lines
+        mean = np.mean(data)
+        std_dev = np.std(data)
+        plt.axvline(mean, color='r', linestyle='--', linewidth=2, label=f'Mean: {mean:.6f}')
+        plt.axvline(mean - std_dev, color='g', linestyle='--', linewidth=2, label=f'Std Dev: {std_dev:.6f}')
+        plt.axvline(mean + std_dev, color='g', linestyle='--', linewidth=2)
+        
+        # Add labels and title
+        plt.xlabel('Latency (sec)', fontsize=14)
+        plt.ylabel('Frequency', fontsize=14)
+        plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz', fontsize=16)
+        
+        # Add legend
+        plt.legend()
+        
+        # Save the plot
         plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.pdf'), format='pdf')
         plt.close()
-
 
 def plot_boxplot(output_folder, latency_lists):
     if not os.path.exists(output_folder):
