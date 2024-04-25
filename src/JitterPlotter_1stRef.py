@@ -129,25 +129,25 @@ def generate_histogram(output_folder, latency_lists):
     for Frequency, data in latency_lists.items():
         plt.figure(figsize=(10, 6))  # Adjust the figure size
         sns.set_theme(style="whitegrid")   # Set seaborn style
-        
+
         # Plot histogram
         sns.histplot(data, bins=50, alpha=0.5, color='skyblue')
-        
+
         # Add mean and standard deviation lines
         mean = np.mean(data)
         std_dev = np.std(data)
         plt.axvline(mean, color='r', linestyle='--', linewidth=2, label=f'Mean: {mean:.6f}')
         plt.axvline(mean - std_dev, color='g', linestyle='--', linewidth=2, label=f'Std Dev: {std_dev:.6f}')
         plt.axvline(mean + std_dev, color='g', linestyle='--', linewidth=2)
-        
+
         # Add labels and title
         plt.xlabel('Latency (sec)', fontsize=14)
         plt.ylabel('Frequency', fontsize=14)
         plt.title(f'Jitter Histogram - Frequency: {Frequency} Hz', fontsize=16)
-        
+
         # Add legend
         plt.legend()
-        
+
         # Save the plot
         plt.savefig(os.path.join(output_folder, f'jitter_histogram_Frequency_{Frequency}.pdf'), format='pdf')
         plt.close()
@@ -155,17 +155,28 @@ def generate_histogram(output_folder, latency_lists):
 def plot_boxplot(output_folder, latency_lists):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+
     # Prepare data for boxplot
     data = [times for times in latency_lists.values()]
     labels = list(latency_lists.keys())
 
+    # Set seaborn style
+    sns.set(style="whitegrid")
+
     # Plot boxplot
-    plt.figure()
-    plt.boxplot(data, labels=labels)
-    plt.xlabel('Category')
-    plt.ylabel('Time (sec)')
-    plt.title('Boxplot of Latency Categories')
-    plt.savefig(os.path.join(output_folder, f'Jitter_Boxplot.pdf'), format='pdf')
+    plt.figure(figsize=(10, 6))  # Adjust the figure size
+    sns.boxplot(data=data, palette="Set3")
+
+    # Add labels and title
+    plt.xlabel('Category', fontsize=14)
+    plt.ylabel('Latency (sec)', fontsize=14)
+    plt.title('Boxplot of Latency Categories', fontsize=16)
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45)
+
+    # Save the plot
+    plt.savefig(os.path.join(output_folder, 'Jitter_Boxplot.pdf'), format='pdf')
     plt.close()
 
 def calculate_packet_loss(latency_lists):
