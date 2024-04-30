@@ -184,7 +184,7 @@ def calculate_packet_loss(latency_lists):
     print("Packet Loss Rates:")
     for category, times in latency_lists.items():
         num_packets_received = len(times)
-        if category < 100:
+        if category <= 100:
             packet_loss = 10*category - num_packets_received
             packet_loss_rate = packet_loss / 10*category
         else:
