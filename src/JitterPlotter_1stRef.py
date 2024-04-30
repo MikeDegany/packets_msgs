@@ -212,7 +212,6 @@ def plot_packet_loss(output_folder, packet_loss_rates):
     # Annotate each point with its percentage value
     for category, loss_rate in zip(categories, loss_rates):
         plt.text(category, loss_rate, f'{loss_rate:.2f}%\n{category}', ha='right', va='bottom')
-
     plt.tight_layout()
     plt.savefig(os.path.join(output_folder, 'packet_loss_vs_frequency.pdf'), format='pdf')  # Save figure
     plt.close()
