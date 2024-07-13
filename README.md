@@ -121,8 +121,6 @@ This will apply the new `ROS_DOMAIN_ID` to the Create® 3, RPi4 Terminal, and RP
 
 On the user PC, set the `ROS_DOMAIN_ID` in your *setup.bash* file and source it. See [Installing ROS 2](../setup/basic.md#installing-ros-2) for more details.
 
-{% endtab %}
-{% endtabs %}
 
 Once the Create® 3 application has restarted, try calling `ros2 topic list` on both your PC and the RPi4 to ensure that all topics are visible.
 
@@ -139,47 +137,42 @@ if we have a robot named `robot1`, the namespaced topics would look like:
 ```bash
 ubuntu@ubuntu:~$ ros2 topic list
 /parameter_events
-/robot1/battery_state
-/robot1/cmd_audio
-/robot1/cmd_lightring
-/robot1/cmd_vel
-/robot1/diagnostics
-/robot1/dock_status
-/robot1/function_calls
-/robot1/hazard_detection
-/robot1/imu
-/robot1/interface_buttons
-/robot1/ip
-/robot1/ir_intensity
-/robot1/ir_opcode
-/robot1/joint_states
-/robot1/joy
-/robot1/joy/set_feedback
-/robot1/kidnap_status
-/robot1/mobility_monitor/transition_event
-/robot1/mouse
-/robot1/odom
-/robot1/robot_description
-/robot1/robot_state/transition_event
-/robot1/scan
-/robot1/slip_status
-/robot1/static_transform/transition_event
-/robot1/stop_status
-/robot1/tf
-/robot1/tf_static
-/robot1/wheel_status
-/robot1/wheel_ticks
-/robot1/wheel_vels
+/TB1/battery_state
+/TB1/cmd_audio
+/TB1/cmd_lightring
+/TB1/cmd_vel
+/TB1/diagnostics
+/TB1/dock_status
+/TB1/function_calls
+/TB1/hazard_detection
+/TB1/imu
+/TB1/interface_buttons
+/TB1/ip
+/TB1/ir_intensity
+/TB1/ir_opcode
+/TB1/joint_states
+/TB1/joy
+/TB1/joy/set_feedback
+/TB1/kidnap_status
+/TB1/mobility_monitor/transition_event
+/TB1/mouse
+/TB1/odom
+/TB1/robot_description
+/TB1/robot_state/transition_event
+/TB1/scan
+/TB1/slip_status
+/TB1/static_transform/transition_event
+/TB1/stop_status
+/TB1/tf
+/TB1/tf_static
+/TB1/wheel_status
+/TB1/wheel_ticks
+/TB1/wheel_vels
 /rosout
 ```
 
-{% tabs namespacing %}
-{% tab namespacing galactic %}
-
 Namespacing is not supported in Galactic.
 
-{% endtab %}
-{% tab namespacing humble %}
 
 To set the robot namespace, SSH into your TurtleBot 4 and run the turtlebot4 setup tool:
 
@@ -197,12 +190,21 @@ Save the settings, then apply settings in the main menu.
 
 This will apply the new namespace to the Create® 3, RPi4 Terminal, and RPi4 Robot Upstart job.
 
+
+Assigning separate ROS_DOMAIN_IDs to the devices in the network will have several benefits, but the PC cannot see the robots in the networks, means the PC cannot subscribe to the topics published by robots. Therefore, we need to use a bridge to transform data from a DOMAIN_ID to another. 
+This would be done using [domain_bridge](https://github.com/ros2/domain_bridge), a ROS 2 domain bridge. Bridges ROS communication between different ROS domain IDs.
+
+
+
+
+
+
 ### Viewing the Robot in RViz
 
 On the user PC, `turtlebot4_desktop` launch files can use a `namespace` argument to view a specific robot:
 
 ```bash
-ros2 launch turtlebot4_viz view_model.launch.py namespace:=/robot1
+ros2 launch turtlebot4_viz view_model.launch.py namespace:=/TB1
 ```
 
 ### Launching Robots in Simulation
@@ -210,13 +212,13 @@ ros2 launch turtlebot4_viz view_model.launch.py namespace:=/robot1
 The first robot can be launched normally, with the addition of a `namespace`. All other parameters are still available as shown below:
 
 ```bash
-ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py namespace:=/robot1 nav2:=true slam:=false localization:=true rviz:=true
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py namespace:=/TB1 nav2:=true slam:=false localization:=true rviz:=true
 ```
 
 Any additional robots must be launched using the `turtlebot4_spawn` launch file, a unique `namespace` and a unique spawn location:
 
 ```bash
-ros2 launch turtlebot4_ignition_bringup turtlebot4_spawn.launch.py namespace:=/robot2 x:=0.0 y:=1.0 nav2:=true slam:=false localization:=true rviz:=true
+ros2 launch turtlebot4_ignition_bringup turtlebot4_spawn.launch.py namespace:=/TB2 x:=0.0 y:=1.0 nav2:=true slam:=false localization:=true rviz:=true
 ```
 
 ### Launching Navigation
@@ -224,16 +226,12 @@ ros2 launch turtlebot4_ignition_bringup turtlebot4_spawn.launch.py namespace:=/r
 The SLAM, Localization and Nav2 launch files all support namespacing and can be launched as follows:
 
 ```bash
-ros2 launch turtlebot4_navigation slam.launch.py namespace:=/robot1
-ros2 launch turtlebot4_navigation localization.launch.py map:=office.yaml namespace:=/robot1
-ros2 launch turtlebot4_navigation nav2.launch.py namespace:=/robot1
+ros2 launch turtlebot4_navigation slam.launch.py namespace:=/TB1
+ros2 launch turtlebot4_navigation localization.launch.py map:=office.yaml namespace:=/TB1
+ros2 launch turtlebot4_navigation nav2.launch.py namespace:=/TB1
 ```
 
-Replace `robot1` with the desired robot namespace. 
-
-{% endtab %}
-{% endtabs %}
-
+Replace `TB1` with the desired robot namespace. 
 
 
 
