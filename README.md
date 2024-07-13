@@ -191,9 +191,85 @@ Save the settings, then apply settings in the main menu.
 This will apply the new namespace to the Create® 3, RPi4 Terminal, and RPi4 Robot Upstart job.
 
 
-Assigning separate ROS_DOMAIN_IDs to the devices in the network will have several benefits, but the PC cannot see the robots in the networks, means the PC cannot subscribe to the topics published by robots. Therefore, we need to use a bridge to transform data from a DOMAIN_ID to another. 
-This would be done using [domain_bridge](https://github.com/ros2/domain_bridge), a ROS 2 domain bridge. Bridges ROS communication between different ROS domain IDs.
+### Domain Bridge
 
+
+Assigning separate ROS_DOMAIN_IDs to the devices in the network will have several benefits, but the PC cannot see the robots in the networks, means the PC cannot subscribe to the topics published by robots. Therefore, we need to use a bridge to transform data from a DOMAIN_ID to another. 
+This would be done using [domain_bridge](https://github.com/ros2/domain_bridge), a ROS 2 domain bridge. Bridges ROS communication between different ROS domain IDs. Read the document to be familiar with how domain bridge works. 
+
+Run the following commands to install the domain_bridge: 
+
+```bash
+mkdir -p domain_bridge_ws/src 
+
+cd domain_bridge_ws 
+
+git clone –b humble https://github.com/ros2/domain_bridge.git src/ 
+
+colcon build 
+```
+
+You must provide the path to a YAML configuration file as the last argument to the executable. when running the domain_bridge which has been provided in domain_bridge folder for this project. 
+
+### Multi-robot SLAM
+
+Mutlirobot SLAM is to map the environment collaboratively using multiple robots and generate a collaborative map of the environment. To do so, you should install the following SLAM package which has been gotten from [here](https://github.com/SteveMacenski/slam_toolbox/pull/592)
+```bash
+mkdir -p multirobot_slam/src 
+
+cd multirobot_slam 
+
+git clone https://github.com/MikeDegany/multislam_toolbox.git src/ 
+
+colcon build 
+```
+
+After you install the package you need to change the following parameters: 
+
+In config.xml change ```base_frame``` to ```base_link```
+In .launch file change ```/scan``` to ```scan```
+
+
+ -### Setup Multirobot Mapping and Navigation
+
+Now that you have installed the reqyured packages on the system. You are ready to run the project: 
+
+- #### Robots should be off
+All Turtlebot4 robots should be off at the beginning. 
+- #### Run domain_bridge on the PC
+```bash
+cd domain_bridge_we 
+
+source install/setup.bash  
+
+ros2 run domain_bridge domain_bridge [path to the config file] (exampler: src/examples/test_bridge.yaml) 
+```
+- Turn on the Robots
+Plug the Turtlebots into dock station to turn on 
+wait until all [TB_NAMESPACE]/odom and -TB_NAMESPACE/scan topics appear. 
+
+- #### Run SLAM, NAV, and RVIZ for each robot separately
+```bash 
+Terminal 1, launch multirobot_slam: 
+
+cd multirobot_slam 
+
+source install/setup.bash 
+
+ros2 launch slam_toolbox online_async_multirobot_launch.py namespace:=[NAMESPACE OF TB] 
+
+ 
+
+Terminal 2, launch Nav2: 
+
+Ros2 launch turtlebot4_navigation nav2.launch.py namespace:=[NAMESPACE OF TB] 
+
+ 
+
+Terminal 3, launch RViz:   
+
+ros2 launch turtlebot4_viz view_robot.launch.py namespace:=[NAMESPACE OF TB] 
+```
 
 
 
