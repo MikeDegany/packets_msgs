@@ -8,8 +8,10 @@
 5. [Networking](#networking)
 6. [Mapping](#mapping)
 7. [Navigation](#navigation)
-8. [Experiments and Results](#experiments-and-results)
+8. [Experimental Setup](#experimental-setup)
 9. [Conclusion](#conclusion)
+
+<sub><sup>To jump straight into the implementation setup go to [Experimental Setup](#experimental-setup)</sup></sub>
 
 ## Introduction
 
@@ -19,7 +21,7 @@ This project is to implement Mapping and Navigation with multiple robots, meetin
 
 The system consists of multiple mobile robots interconnected via a Wi-Fi network, with a central PC handling the mapping and navigation tasks. The robots employ a Graph-based SLAM technique, integrating localized laser scans to construct and optimize a pose graph for a collaborative map.
 
-![System Overview](path_to_system_overview_image.png)
+![System Overview](docs/media/SystemOverview "System Overview")
 
 ## Hardware Setup
 
@@ -41,18 +43,6 @@ The software stack includes:
 4. SLAM-Toolbox for mapping
 5. ROS2 navigation stack for autonomous navigation
 
-## Networking
-
-- Wi-Fi network connecting all robots and the central computer
-- Use of domain bridge to optimize communication
-- Implementation of namespacing and different Domain IDs for robot identification
-
-### Network Performance Metrics
-- Latency
-- Packet loss
-- Jitter
-
-Refer to the included graphs for detailed performance analysis at various frequencies.
 
 ## Mapping
 
@@ -62,7 +52,7 @@ The system uses a Graph-based SLAM approach:
 3. Pose graph creation
 4. Map optimization
 
-![Mapping Hierarchy](path_to_mapping_hierarchy_image.png)
+![Mapping Hierarchy](docs/media/mapping)
 
 Multiple robots share pose graphs to create a collaborative map.
 
@@ -75,18 +65,20 @@ The ROS NAV2 navigation stack is integrated for autonomous navigation:
 
 The navigation stack allows robots to navigate through dynamic environments and adapt to real-time changes.
 
-## Experiments and Results
+## Experimental Setup
 
-To set up multiple robots, start by configuring a single robot first. This manual provides the best guide to help you through the process: https://turtlebot.github.io/turtlebot4-user-manual/
+To set up multiple robots, begin by configuring a single robot. The TurtleBot 4 User Manual provides an excellent guide for this process: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4-user-manual/).
 
-Portions of the following documentation have been adapted from the original Turtlebot4 manual. In this tutorial we will be using ROS2 Humble.
+This tutorial uses ROS2 Humble and includes portions adapted from the original TurtleBot 4 manual.
 
+### Setting Up Multiple Robots
 
-After you set up a single robot and learn how to do mapping and navigation with it. Now it's time to set up multiple robots:
+Once you've set up a single robot and mastered mapping and navigation, it's time to configure multiple robots.
 
-By default, each TurtleBot 4 will use the same [topic, action, and service names](../software/turtlebot4_common.md#ros-2-interfaces) for communication. If we connect two default TurtleBot 4's to the same network, the topics from both robots will communicate with each other and cause unwanted behaviours.
+By default, each TurtleBot 4 uses the same [topic, action, and service names](../software/turtlebot4_common.md#ros-2-interfaces) for communication. If two default TurtleBot 4 robots are connected to the same network, their topics will interfere with each other, leading to unwanted behaviors.
 
-There are two main methods for running multiple TurtleBot 4's on a single network. _ROS_DOMAIN_ID_ and _NAMESPACING_. In this project we take both approaches together. 
+There are two primary methods for running multiple TurtleBot 4 robots on a single network: **ROS_DOMAIN_ID** and **namespacing**. In this project, we will use both approaches together to make it functional.
+
 
 
 ## ROS_DOMAIN_ID
@@ -113,11 +105,11 @@ turtlebot4-setup
 Navigate to 'Bash Setup' in the 'ROS Setup' menu, then change your `ROS_DOMAIN_ID`. Save the settings, then apply settings in the main menu.
 
 <figure class="aligncenter">
-    <img src="media/domain_id.gif" alt="ROS_DOMAIN_ID" style="width: 100%"/>
+    <img src="https://github.com/turtlebot/turtlebot4-user-manual/blob/gh-pages/tutorials/media/domain_id.gif" alt="ROS_DOMAIN_ID" style="width: 100%"/>
     <figcaption>Setting the ROS_DOMAIN_ID</figcaption>
 </figure>
 
-This will apply the new `ROS_DOMAIN_ID` to the Create® 3, RPi4 Terminal, and RPi4 Robot Upstart job.
+This will apply the new `ROS_DOMAIN_ID` to the Create3®, RPi4 Terminal, and RPi4 Robot Upstart job.
 
 On the user PC, set the `ROS_DOMAIN_ID` in your *setup.bash* file and source it. See [Installing ROS 2](../setup/basic.md#installing-ros-2) for more details.
 
@@ -184,7 +176,7 @@ Navigate to 'Bash Setup' in the 'ROS Setup' menu, then change the `ROBOT_NAMESPA
 Save the settings, then apply settings in the main menu.
 
 <figure class="aligncenter">
-    <img src="media/namespace.gif" alt="namespace" style="width: 100%"/>
+    <img src="https://github.com/turtlebot/turtlebot4-user-manual/blob/gh-pages/tutorials/media/namespace.gif" alt="namespace" style="width: 100%"/>
     <figcaption>Setting the robot namespace</figcaption>
 </figure>
 
@@ -246,7 +238,7 @@ ros2 run domain_bridge domain_bridge [path to the config file] (exampler: src/ex
 ```
 - Turn on the Robots
 Plug the Turtlebots into dock station to turn on 
-wait until all [TB_NAMESPACE]/odom and -TB_NAMESPACE/scan topics appear. 
+wait until all [TB_NAMESPACE]/odom and -TB_NAMESPACE/scan topics appear. We have chosen TB1, TB2, etc for the robots.
 
 - #### Run SLAM, NAV, and RVIZ for each robot separately
 ```bash 
@@ -315,19 +307,7 @@ Replace `TB1` with the desired robot namespace.
 
 Experiments were conducted to evaluate the performance and efficiency of the multi-robot mapping and navigation system in an indoor environment.
 
-### Setup
-- Multiple TurtleBot3 robots
-- iRobot Create3 mobile base
-- Raspberry Pi 4 running ROS2
-- 2D LIDAR sensors
-- Central computer for coordination and data aggregation
-
-### Results
-- Successful collaborative mapping of indoor environments
-- Improved latency and reduced packet loss with domain bridge implementation
-- Efficient autonomous navigation using the generated map
-
-Refer to the included figures for visual results of the mapping process and network performance graphs.
+In order to evaluate the network, the python scripts provided in MultiBotNetTest could be run. You create the package on robots and the PC, then run _publisher.py_ on a robot/robots and _plot.py_ on the PC. You can try different scenarios depending on your evaluation desires. 
 
 ## Conclusion
 
